@@ -1,22 +1,44 @@
-const sku = require("./stock.json");
-const type = require("./transactions.json");
+const stockData = require("./stock.json");
+const transactionData = require("./transactions.json");
 
-const nilo = (stock, transactions) => {
-  for (let i = 0; i < stock.length; i++) {
-    for (let j = 0; j < transactions.length; j++) {
-      if (
-        stock[i].sku === transactions[j].sku &&
-        transactions[j].type === "refund"
-      ) {
-        stock[i].stock = stock[i].stock + transactions[j].qty;
-      } else if (
-        stock[i].sku === transactions[j].sku &&
-        transactions[j].type === "order"
-      ) {
-        stock[i].stock = stock[i].stock - transactions[j].qty;
-      }
-    }
+const getCurrentStock = async (name) => {
+  if (!transactionData.find((item) => item.sku === name)) {
+    throw new Error(`No sku found`);
   }
-  return stock;
+
+  let stockItem = stockData.find((item) => item.sku === name);
+
+  if (!stockItem) {
+    stockItem = {
+      sku: name,
+      stock: 0,
+    };
+  }
+
+  const transactions = transactionData.filter((item) => item.sku === name);
+
+  transactions.forEach((transaction) => {
+    if (transaction.type === "refund") {
+      stockItem.stock += transaction.qty;
+    } else if (transaction.type === "order") {
+      stockItem.stock -= transaction.qty;
+    }
+  });
+
+  if (stockItem.stock < 0) {
+    throw new Error("Data includes logical errors");
+  }
+
+  return stockItem;
 };
-console.log("AAAAA", nilo(sku, type));
+
+const result = async () => {
+  try {
+    const stock = await getCurrentStock("LTV719449/39/39");
+    return stock;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+result();
